@@ -1,4 +1,4 @@
-module go_gcp_service
+module github.com/readytowork-org/go_firebase_service
 
 go 1.22.0
 
