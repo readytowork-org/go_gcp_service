@@ -1,4 +1,4 @@
-module github.com/readytowork/go_gcp_service
+module github.com/readytowork-org/go_gcp_service
 
 go 1.22.0
 
