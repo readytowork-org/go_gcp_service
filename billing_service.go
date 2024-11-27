@@ -1,9 +1,10 @@
 package go_gcp_service
 
 import (
-	"cloud.google.com/go/billing/budgets/apiv1/budgetspb"
 	"context"
 	"fmt"
+
+	"cloud.google.com/go/billing/budgets/apiv1/budgetspb"
 	"google.golang.org/api/cloudbilling/v1"
 	"google.golang.org/api/iterator"
 	"google.golang.org/genproto/googleapis/type/money"
@@ -16,13 +17,13 @@ type billingServiceLogger interface {
 
 // BillingService -> handles the gcp billing related functions
 type BillingService struct {
-	projectName       string
-	billingAccountID  string
-	budgetDisplayName string
-	budgetAmount      int64
-	logger            billingServiceLogger
-	gcpBilling        BillingClient
-	budgetClient      BudgetClient
+	ProjectName       string
+	BillingAccountID  string
+	BudgetDisplayName string
+	BudgetAmount      int64
+	Logger            billingServiceLogger
+	GcpBilling        BillingClient
+	BudgetClient      BudgetClient
 }
 
 // NewGCPBillingService for the GCPBilling struct
@@ -34,8 +35,8 @@ func NewGCPBillingService(
 
 // GetBillingInfo Get Billing info for certain date
 func (s BillingService) GetBillingInfo() (*cloudbilling.ProjectBillingInfo, error) {
-	projectName := fmt.Sprintf("projects/%s", s.projectName)
-	billingInfo, err := s.gcpBilling.Projects.GetBillingInfo(projectName).Do()
+	projectName := fmt.Sprintf("projects/%s", s.ProjectName)
+	billingInfo, err := s.GcpBilling.Projects.GetBillingInfo(projectName).Do()
 
 	return billingInfo, err
 }
@@ -46,19 +47,19 @@ func (s BillingService) GetExistingBudgetList(
 ) (*budgetspb.Budget, error) {
 	var budgetList []*budgetspb.Budget
 	var err error
-	parentId := fmt.Sprintf("billingAccounts/%s", s.billingAccountID)
+	parentId := fmt.Sprintf("billingAccounts/%s", s.BillingAccountID)
 	req := budgetspb.ListBudgetsRequest{
 		Parent: parentId,
 	}
 
-	budgetsIter := s.budgetClient.ListBudgets(ctx, &req)
+	budgetsIter := s.BudgetClient.ListBudgets(ctx, &req)
 	for {
 		budget, err := budgetsIter.Next()
 		if err == iterator.Done {
 			break
 		}
 		if err != nil {
-			s.logger.Errorf("failed to retrieve budget: %v", err)
+			s.Logger.Errorf("failed to retrieve budget: %v", err)
 		}
 		budgetList = append(budgetList, budget)
 	}
@@ -70,11 +71,11 @@ func (s BillingService) GetExistingBudgetList(
 }
 
 func (s BillingService) GetBudgetCreateUpdateRequest() *budgetspb.Budget {
-	projectName := fmt.Sprintf("projects/%s", s.projectName)
+	projectName := fmt.Sprintf("projects/%s", s.ProjectName)
 
 	budget := &budgetspb.Budget{
 		DisplayName: "Project Budget",
-		Name:        s.budgetDisplayName,
+		Name:        s.BudgetDisplayName,
 		BudgetFilter: &budgetspb.Filter{
 			CreditTypesTreatment: budgetspb.Filter_INCLUDE_ALL_CREDITS,
 			Projects:             []string{projectName},
@@ -82,7 +83,7 @@ func (s BillingService) GetBudgetCreateUpdateRequest() *budgetspb.Budget {
 		Amount: &budgetspb.BudgetAmount{
 			BudgetAmount: &budgetspb.BudgetAmount_SpecifiedAmount{
 				SpecifiedAmount: &money.Money{
-					Units:        s.budgetAmount,
+					Units:        s.BudgetAmount,
 					Nanos:        0,
 					CurrencyCode: "JPY",
 				},
@@ -111,16 +112,16 @@ func (s BillingService) GetBudgetCreateUpdateRequest() *budgetspb.Budget {
 }
 
 func (s BillingService) CreateBudget(ctx context.Context) (*budgetspb.Budget, error) {
-	parentId := fmt.Sprintf("billingAccounts/%s", s.billingAccountID)
+	parentId := fmt.Sprintf("billingAccounts/%s", s.BillingAccountID)
 	budget := s.GetBudgetCreateUpdateRequest()
 	createRequest := budgetspb.CreateBudgetRequest{
 		Parent: parentId,
 		Budget: budget,
 	}
 
-	billingInfo, err := s.budgetClient.CreateBudget(ctx, &createRequest)
+	billingInfo, err := s.BudgetClient.CreateBudget(ctx, &createRequest)
 	if err != nil {
-		s.logger.Errorf("failed to create budget: %v\n", err)
+		s.Logger.Errorf("failed to create budget: %v\n", err)
 	}
 
 	return billingInfo, err
@@ -147,9 +148,9 @@ func (s BillingService) EditBudget(ctx context.Context, budget *budgetspb.Budget
 		Budget: budget,
 	}
 
-	billingInfo, err := s.budgetClient.UpdateBudget(ctx, &editRequest)
+	billingInfo, err := s.BudgetClient.UpdateBudget(ctx, &editRequest)
 	if err != nil {
-		s.logger.Errorf("failed to retrieve budget: %v\n", err)
+		s.Logger.Errorf("failed to retrieve budget: %v\n", err)
 	}
 
 	return billingInfo, err

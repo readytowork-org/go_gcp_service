@@ -1,8 +1,9 @@
 package go_gcp_service
 
 import (
-	"cloud.google.com/go/billing/budgets/apiv1"
 	"context"
+
+	"cloud.google.com/go/billing/budgets/apiv1"
 	"google.golang.org/api/option"
 )
 
@@ -11,18 +12,18 @@ type budgetClientLogger interface {
 }
 
 type BudgetClientConfig struct {
-	logger       budgetClientLogger
-	clientOption *option.ClientOption
+	Logger       budgetClientLogger
+	ClientOption *option.ClientOption
 }
 type BudgetClient struct {
 	*budgets.BudgetClient
 }
 
 func NewGCPBudgetClient(clientConfig BudgetClientConfig) BudgetClient {
-	budgetClient, err := budgets.NewBudgetClient(context.Background(), *clientConfig.clientOption)
+	budgetClient, err := budgets.NewBudgetClient(context.Background(), *clientConfig.ClientOption)
 
 	if err != nil {
-		clientConfig.logger.Panic("Failed to create cloud budget api client: %v \n", err)
+		clientConfig.Logger.Panic("Failed to create cloud budget api client: %v \n", err)
 	}
 	return BudgetClient{
 		budgetClient,

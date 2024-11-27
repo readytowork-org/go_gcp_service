@@ -1,9 +1,10 @@
 package go_gcp_service
 
 import (
-	"cloud.google.com/go/storage"
 	"context"
 	"errors"
+
+	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
 )
 
@@ -14,9 +15,9 @@ type bucketClientLogger interface {
 }
 
 type BucketClientConfig struct {
-	logger            bucketClientLogger
-	storageBucketName string
-	clientOption      *option.ClientOption
+	Logger            bucketClientLogger
+	StorageBucketName string
+	ClientOption      *option.ClientOption
 }
 
 type BucketClient struct {
@@ -25,24 +26,24 @@ type BucketClient struct {
 
 // NewGCPBucketClient creates a new gcp bucket api client
 func NewGCPBucketClient(config BucketClientConfig) BucketClient {
-	bucketName := config.storageBucketName
+	bucketName := config.StorageBucketName
 	ctx := context.Background()
 	if bucketName == "" {
-		config.logger.Error("Please check your env file for STORAGE_BUCKET_NAME")
+		config.Logger.Error("Please check your env file for STORAGE_BUCKET_NAME")
 	}
-	client, err := storage.NewClient(ctx, *config.clientOption)
+	client, err := storage.NewClient(ctx, *config.ClientOption)
 	if err != nil {
-		config.logger.Fatal(err.Error())
+		config.Logger.Fatal(err.Error())
 	}
 
 	bucket := client.Bucket(bucketName)
 	_, err = bucket.Attrs(ctx)
 	if errors.Is(err, storage.ErrBucketNotExist) {
-		config.logger.Fatalf("Provided bucket %v doesn't exists", bucketName)
+		config.Logger.Fatalf("Provided bucket %v doesn't exists", bucketName)
 	}
 
 	if err != nil {
-		config.logger.Fatalf("Cloud bucket error: %v", err.Error())
+		config.Logger.Fatalf("Cloud bucket error: %v", err.Error())
 	}
 
 	bucketAttrsToUpdate := storage.BucketAttrsToUpdate{
@@ -52,10 +53,11 @@ func NewGCPBucketClient(config BucketClientConfig) BucketClient {
 				Methods:         []string{"PUT", "PATCH", "GET", "POST", "OPTIONS", "DELETE"},
 				Origins:         []string{"*"},
 				ResponseHeaders: []string{"Content-Type"},
-			}},
+			},
+		},
 	}
 	if _, err := bucket.Update(ctx, bucketAttrsToUpdate); err != nil {
-		config.logger.Fatalf("Cloud bucket update error: %v", err.Error())
+		config.Logger.Fatalf("Cloud bucket update error: %v", err.Error())
 	}
 	return BucketClient{
 		client,

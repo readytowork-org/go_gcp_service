@@ -24,7 +24,7 @@ type storageBucketLogger interface {
 
 // StorageBucketService the file upload/download functions
 type StorageBucketService struct {
-	client            *storage.Client
+	Client            *storage.Client
 	logger            storageBucketLogger
 	storageBucketName string
 }
@@ -36,7 +36,9 @@ func NewStorageBucketService(
 	return serviceConfig
 }
 
-func (service StorageBucketService) GetImageUrl(ctx context.Context, image multipart.File, imageFileHeader *multipart.FileHeader) (uploadedUrl string, err error) {
+func (service StorageBucketService) GetImageUrl(
+	ctx context.Context, image multipart.File, imageFileHeader *multipart.FileHeader,
+) (uploadedUrl string, err error) {
 	if imageFileHeader != nil && image != nil {
 		fileName, _ := GetFileName(imageFileHeader.Filename)
 		originalFileName := "images/" + fileName
@@ -60,7 +62,7 @@ func (service StorageBucketService) UploadFile(
 		service.logger.Fatal("Please check your env file for StorageBucketName")
 	}
 
-	_, err := service.client.Bucket(bucketName).Attrs(ctx)
+	_, err := service.Client.Bucket(bucketName).Attrs(ctx)
 
 	if errors.Is(err, storage.ErrBucketNotExist) {
 		service.logger.Fatalf("provided bucket %v doesn't exists", bucketName)
@@ -70,7 +72,7 @@ func (service StorageBucketService) UploadFile(
 		service.logger.Fatalf("cloud bucket error: %v", err.Error())
 	}
 
-	wc := service.client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
+	wc := service.Client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
 	wc.ContentType = "application/octet-stream"
 
 	if _, err := io.Copy(wc, file); err != nil {
@@ -97,7 +99,7 @@ func (service StorageBucketService) UploadBinary(
 		service.logger.Fatal("Please check your env file for StorageBucketName")
 	}
 
-	_, err := service.client.Bucket(bucketName).Attrs(ctx)
+	_, err := service.Client.Bucket(bucketName).Attrs(ctx)
 
 	if err == storage.ErrBucketNotExist {
 		service.logger.Fatalf("provided bucket %v doesn't exists", bucketName)
@@ -107,7 +109,7 @@ func (service StorageBucketService) UploadBinary(
 		service.logger.Fatalf("cloud bucket error: %v", err.Error())
 	}
 
-	wc := service.client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
+	wc := service.Client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
 	wc.ContentType = "application/octet-stream"
 
 	if _, err := io.Copy(wc, bytes.NewReader(file)); err != nil {
@@ -144,7 +146,7 @@ func (service StorageBucketService) RemoveObject(objectName string) error {
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
-	objectToDelete := service.client.Bucket(bucketName).Object(objectName)
+	objectToDelete := service.Client.Bucket(bucketName).Object(objectName)
 	attrs, err := objectToDelete.Attrs(ctx)
 	if err != nil {
 		return fmt.Errorf("Object(%v).Attrs: %v", objectToDelete, err)
@@ -161,16 +163,18 @@ func (service StorageBucketService) RemoveObject(objectName string) error {
 	return nil
 }
 
-func (service StorageBucketService) UploadThumbnailFile(ctx context.Context,
+func (service StorageBucketService) UploadThumbnailFile(
+	ctx context.Context,
 	file image.Image,
-	fileName string, extension string) (string, error) {
+	fileName string, extension string,
+) (string, error) {
 
 	var bucketName = service.storageBucketName
 	if bucketName == "" {
 		service.logger.Fatal("Please check your env file for StorageBucketName")
 	}
 
-	_, err := service.client.Bucket(bucketName).Attrs(ctx)
+	_, err := service.Client.Bucket(bucketName).Attrs(ctx)
 	if errors.Is(err, storage.ErrBucketNotExist) {
 		service.logger.Fatalf("provided bucket %v doesn't exists", bucketName)
 	}
@@ -178,7 +182,7 @@ func (service StorageBucketService) UploadThumbnailFile(ctx context.Context,
 		service.logger.Fatalf("cloud bucket error: %v", err.Error())
 	}
 
-	wc := service.client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
+	wc := service.Client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
 	wc.ContentType = "application/octet-stream"
 
 	if extension == "jpg" || extension == "jpeg" {
