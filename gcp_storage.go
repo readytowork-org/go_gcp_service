@@ -24,16 +24,22 @@ type storageBucketLogger interface {
 
 // StorageBucketService the file upload/download functions
 type StorageBucketService struct {
-	Client            *storage.Client
-	logger            storageBucketLogger
-	storageBucketName string
+	Client            BucketClient
+	Logger            storageBucketLogger
+	StorageBucketName string
 }
 
 // NewStorageBucketService for the StorageBucketService struct
 func NewStorageBucketService(
-	serviceConfig StorageBucketService,
+	client BucketClient,
+	logger storageBucketLogger,
+	storageBucketName string,
 ) StorageBucketService {
-	return serviceConfig
+	return StorageBucketService{
+		Client:            client,
+		Logger:            logger,
+		StorageBucketName: storageBucketName,
+	}
 }
 
 func (service StorageBucketService) GetImageUrl(
@@ -56,20 +62,20 @@ func (service StorageBucketService) UploadFile(
 	file multipart.File,
 	fileName string,
 ) (string, error) {
-	bucketName := service.storageBucketName
+	bucketName := service.StorageBucketName
 
 	if bucketName == "" {
-		service.logger.Fatal("Please check your env file for StorageBucketName")
+		service.Logger.Fatal("Please check your env file for StorageBucketName")
 	}
 
 	_, err := service.Client.Bucket(bucketName).Attrs(ctx)
 
 	if errors.Is(err, storage.ErrBucketNotExist) {
-		service.logger.Fatalf("provided bucket %v doesn't exists", bucketName)
+		service.Logger.Fatalf("provided bucket %v doesn't exists", bucketName)
 	}
 
 	if err != nil {
-		service.logger.Fatalf("cloud bucket error: %v", err.Error())
+		service.Logger.Fatalf("cloud bucket error: %v", err.Error())
 	}
 
 	wc := service.Client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
@@ -93,20 +99,20 @@ func (service StorageBucketService) UploadBinary(
 	fileName string,
 ) (string, error) {
 
-	var bucketName = service.storageBucketName
+	var bucketName = service.StorageBucketName
 
 	if bucketName == "" {
-		service.logger.Fatal("Please check your env file for StorageBucketName")
+		service.Logger.Fatal("Please check your env file for StorageBucketName")
 	}
 
 	_, err := service.Client.Bucket(bucketName).Attrs(ctx)
 
 	if err == storage.ErrBucketNotExist {
-		service.logger.Fatalf("provided bucket %v doesn't exists", bucketName)
+		service.Logger.Fatalf("provided bucket %v doesn't exists", bucketName)
 	}
 
 	if err != nil {
-		service.logger.Fatalf("cloud bucket error: %v", err.Error())
+		service.Logger.Fatalf("cloud bucket error: %v", err.Error())
 	}
 
 	wc := service.Client.Bucket(bucketName).Object(fileName).NewWriter(ctx)
@@ -137,9 +143,9 @@ func (service StorageBucketService) UploadBinary(
 // RemoveObject removes the file from the storage bucket
 func (service StorageBucketService) RemoveObject(objectName string) error {
 
-	bucketName := service.storageBucketName
+	bucketName := service.StorageBucketName
 	if bucketName == "" {
-		service.logger.Fatal("Please check your env file for StorageBucketName")
+		service.Logger.Fatal("Please check your env file for StorageBucketName")
 	}
 	ctx := context.Background()
 
@@ -169,17 +175,17 @@ func (service StorageBucketService) UploadThumbnailFile(
 	fileName string, extension string,
 ) (string, error) {
 
-	var bucketName = service.storageBucketName
+	var bucketName = service.StorageBucketName
 	if bucketName == "" {
-		service.logger.Fatal("Please check your env file for StorageBucketName")
+		service.Logger.Fatal("Please check your env file for StorageBucketName")
 	}
 
 	_, err := service.Client.Bucket(bucketName).Attrs(ctx)
 	if errors.Is(err, storage.ErrBucketNotExist) {
-		service.logger.Fatalf("provided bucket %v doesn't exists", bucketName)
+		service.Logger.Fatalf("provided bucket %v doesn't exists", bucketName)
 	}
 	if err != nil {
-		service.logger.Fatalf("cloud bucket error: %v", err.Error())
+		service.Logger.Fatalf("cloud bucket error: %v", err.Error())
 	}
 
 	wc := service.Client.Bucket(bucketName).Object(fileName).NewWriter(ctx)

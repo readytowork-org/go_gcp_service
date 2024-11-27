@@ -15,6 +15,7 @@ type BudgetClientConfig struct {
 	Logger       budgetClientLogger
 	ClientOption *option.ClientOption
 }
+
 type BudgetClient struct {
 	*budgets.BudgetClient
 }
