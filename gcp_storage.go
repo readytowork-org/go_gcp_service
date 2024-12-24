@@ -59,7 +59,7 @@ func (service StorageBucketService) GetImageUrl(
 // UploadFile uploads the file to the cloud storage
 func (service StorageBucketService) UploadFile(
 	ctx context.Context,
-	file multipart.File,
+	file io.Reader,
 	fileName string,
 ) (string, error) {
 	bucketName := service.StorageBucketName
